@@ -1,0 +1,19 @@
+{
+  "name": "sem",
+  "version": "1.0.1",
+  "description": "sem CLI - Some Envs Manager",
+  "author": "scostadavid <me@scostadavid.dev>",
+  "main": "src/index.js",
+  "bin": {
+    "sem": "./bin/sem.js",
+    "sem-dev": "./bin/sem.js"
+  },
+  "scripts": {
+    "start": "node ./bin/sem.js"
+  },
+  "dependencies": {
+    "chalk": "^5.6.2",
+    "commander": "^14.0.1",
+    "fs-extra": "^11.3.2"
+  }
+}
