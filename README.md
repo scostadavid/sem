@@ -1,44 +1,39 @@
-# sem CLI — Technical Documentation
+# sem CLI
 
-## Overview
+`sem` (**Some Env Manager**) is a Node.js CLI tool for managing and applying environment configuration files (`.env`, `local.settings.json`, etc.) across multiple projects.  
+It allows developers to **link projects**, **store multiple environment files**, and **quickly apply them** using simple structured commands.
 
-`sem` is a Node.js CLI tool designed to manage and apply environment configuration files (`.env`, `local.settings.json`, etc.) across multiple projects.  
-It enables developers to store and switch between environment files locally using simple commands.
-
-The project uses **Commander.js** for command-line parsing and **fs-extra** for file and directory management.
-
----
+The CLI is built with **Commander.js** and uses **fs-extra** for file management.
 
 ## Project Structure
 
 ```
 sem/
 ├── bin/
-│   └── sem.js           # CLI entry point
+│   └── sem.js             # CLI entry point
 ├── src/
 │   ├── index.js           # Commander setup
-│   └── commands/          # Individual command handlers
+│   └── commands/
+│       ├── project/       # Project management commands
+│       └── env/           # Environment file commands
 ├── package.json
 ```
 
----
-
 ## Core Technologies
 
-- **Node.js** — runtime
-- **Commander.js** — CLI command parser
-- **fs-extra** — extended filesystem utilities
-- **Chalk** — optional colored output (for later enhancements)
+- **Node.js**: run´ime
+- **Commander.js**: CLI command parser
+- **fs-extra**: file and directory utilities
 
 ---
 
 ## Installation and Setup
 
-### 1. Initialize project
+### 1. Initialize and install dependencies
 
 ```bash
 npm init -y
-npm install commander chalk fs-extra
+npm install commander fs-extra chalk
 ```
 
 ### 2. Make the binary executable
@@ -47,15 +42,13 @@ npm install commander chalk fs-extra
 chmod +x bin/sem.js
 ```
 
-### 3. Link the CLI globally (for local testing)
+### 3. Link globally (for local testing)
 
 ```bash
 npm link
 ```
 
-This makes the CLI available globally as `sem-dev` (based on the `bin` field in `package.json`).
-
----
+This registers the CLI globally under the name `sem`.
 
 ## CLI Entry Point
 
@@ -66,116 +59,138 @@ This makes the CLI available globally as `sem-dev` (based on the `bin` field in 
 require('../src/index.js');
 ```
 
-The shebang allows direct execution from the terminal.  
-All CLI logic is delegated to `src/index.js`.
-
----
+The shebang allows executing the CLI directly.  
+All logic resides in `src/index.js`.
 
 ## Data Storage
 
-- Root directory for sem data:  
+- Root config directory:  
   `~/.sem/`
 
-- Project registry file:  
+- Registered projects file:  
   `~/.sem/projects.json`
 
-- Environment file storage per project:  
+- Environment file storage:  
   `~/.sem/<project_name>/`
 
-Example structure:
+Example:
 
 ```
 ~/.sem/
 ├── projects.json
-└── project1/
+└── my-app/
     ├── dev.env
     ├── staging.env
     └── prod.env
 ```
 
----
+## Commands Overview
 
-## Commands
+### **Project Commands**
+Manage linked projects.
 
-### 1. `add`
-
-Registers a new project by linking a project name to a filesystem path.
-
+#### Add a project
 ```bash
-sem-dev add <project_name> <path>
+sem project add <name> <path>
 ```
+Links a project name to a local filesystem path and stores it in `~/.sem/projects.json`.
 
-Stores mapping in `~/.sem/projects.json`.
-
-### 2. `list`
-
-Displays all registered projects.
-
+#### List all projects
 ```bash
-sem-dev list
+sem project list
 ```
+Displays all linked projects and their paths.
 
-Reads and prints mappings from `projects.json`.
-
-### 3. `add-file`
-
-Adds a file (such as `.env` or `local.settings.json`) to the project’s storage in `~/.sem/<project_name>/`.
-
+#### Remove a project
 ```bash
-sem-dev add-file <project_name> <source_file> [ewrap_name]
+sem project remove <name>
 ```
-
-Ensures the project directory exists, then copies and optionally renames the file.
-
-### 4. `use`
-
-Applies a stored environment file from `~/.sem/<project_name>/` to the linked project directory.
-
-```bash
-sem-dev use <project_name> <ewrap_file> <target_file>
-```
-
-Copies `<ewrap_file>` into `<project_path>/<target_file>`, creating a `.bak` backup if the target exists.
+Unlinks and deletes the project record from `projects.json`.
 
 ---
 
-## Local Development Workflow
+### **Environment Commands**
+Manage stored environment files for a linked project.
 
-Run in development mode:
+#### Add a new environment file
+```bash
+sem env add <project> <sourceFile> [envName]
+```
+Copies a source file (e.g. `.env`) into `~/.sem/<project>/`  
+Optionally renames it as `[envName]`.
+
+#### List environment files
+```bash
+sem env list <project>
+```
+Displays all environment files stored for a given project.
+
+#### Apply an environment file
+```bash
+sem env use <project> <envFile> <target>
+```
+Copies `<envFile>` from the sem store to the project’s `<target>` file (e.g., `.env`).  
+If the target exists, a `.bak` backup is created first.
+
+#### Remove an environment file
+```bash
+sem env remove <project> <envFile>
+```
+Deletes a stored environment file from `~/.sem/<project>/`.
+
+## Example Workflow
 
 ```bash
-npm run start -- <args>
+# 1. Link a local project
+sem project add my-app ~/projects/my-app
+
+# 2. Store a .env file for it
+sem env add my-app ./envs/dev.env dev.env
+
+# 3. Apply it to the project
+sem env use my-app dev.env .env
+
+# 4. List available projects and envs
+sem project list
+sem env list my-app
+
+# 5. Remove env or project if needed
+sem env remove my-app dev.env
+sem project remove my-app
+```
+
+## Local Development
+
+Run directly with Node:
+
+```bash
+npm run start -- <command>
 ```
 
 Example:
 
 ```bash
-npm run start -- list
+npm run start -- project list
 ```
 
-Or use the globally linked CLI:
+Or use the globally linked binary:
 
 ```bash
-sem-dev list
+sem project list
 ```
-
----
 
 ## Design Notes
 
-- Modular command structure (`src/commands/`).
-- State/config stored in JSON.
-- `use` performs direct file copy operations (no symlinks or template parsing yet).
-- Extensible for new commands and colorized output.
-
----
+- Modular command structure under `src/commands/`.
+- JSON-based configuration for persistence.
+- Extensible: easy to add new commands or features.
+- Future additions planned:
+  - Colorized output with Chalk.
+  - Better error and log handling.
 
 ## Next Steps
 
-1. Implement `remove` command for projects.  
-2. Add `list-files` command to show available envs per project.  
-3. Use Chalk for colored output.  
-4. Add better error handling and logging.  
-5. Support custom config paths via `EW_HOME`.  
-6. Separate prod (`sem`) and dev (`sem-dev`) versions.
-
+-  Implement configuration path override (`SEM_HOME` env var).
+- Add export/import of project sets.
+- Improve output formatting (colors, tables).  
+- Improve backup for env override process (store backup on sem folder)

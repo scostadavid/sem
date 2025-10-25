@@ -4,7 +4,7 @@ const program = new Command();
 program
   .name('sem')
   .description('SEM (Some Env Manager) CLI :: manage and apply environment configs across projects')
-  .version('0.1.0');
+  .version('1.0.1');
 
 //
 // PROJECT COMMANDS
