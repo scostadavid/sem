@@ -1,6 +1,6 @@
 {
   "name": "sem",
-  "version": "1.1.0",
+  "version": "2.0.0",
   "description": "sem CLI - Some Envs Manager",
   "author": "scostadavid <me@scostadavid.dev>",
   "main": "src/index.js",
