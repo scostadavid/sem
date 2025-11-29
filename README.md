@@ -1,196 +1,292 @@
 # sem CLI
 
-`sem` (**Some Env Manager**) is a Node.js CLI tool for managing and applying environment configuration files (`.env`, `local.settings.json`, etc.) across multiple projects.  
-It allows developers to **link projects**, **store multiple environment files**, and **quickly apply them** using simple structured commands.
+`sem` (**Some Env Manager**) is a context-aware Node.js CLI tool for managing and applying environment configuration files (`.env`, `local.settings.json`, etc.) across multiple projects.
 
-The CLI is built with **Commander.js** and uses **fs-extra** for file management.
-
-## Project Structure
-
-```
-sem/
-├── bin/
-│   └── sem.js             # CLI entry point
-├── src/
-│   ├── index.js           # Commander setup
-│   └── commands/
-│       ├── project/       # Project management commands
-│       └── env/           # Environment file commands
-├── package.json
-```
-
-## Core Technologies
-
-- **Node.js**: run´ime
-- **Commander.js**: CLI command parser
-- **fs-extra**: file and directory utilities
-
----
-
-## Installation and Setup
-
-### 1. Initialize and install dependencies
+## Installation
 
 ```bash
-npm init -y
-npm install commander fs-extra chalk
+npm install -g sem # soon
 ```
 
-### 2. Make the binary executable
+Or for development:
 
 ```bash
-chmod +x bin/sem.js
-```
-
-### 3. Link globally (for local testing)
-
-```bash
+git clone <repo>
+cd sem
+npm install
 npm link
 ```
 
-This registers the CLI globally under the name `sem`.
+## Quick Start
 
-## CLI Entry Point
+```bash
+# Initialize your project (from project directory)
+cd ~/projects/my-app
+sem init
 
-### `bin/sem.js`
+# Add environment files to sem storage
+sem add .env.production prod
+sem add .env.staging staging
 
-```js
-#!/usr/bin/env node
-require('../src/index.js');
+# Pull environments from storage to local
+sem pull prod             # pulls to .env by default
+sem pull staging .env.local # pulls to .env.local
+
+# Make local changes and push them back
+# ... edit .env locally ...
+sem push                  # pushes changes back to storage
+
+# Compare versions
+sem diff prod             # see what changed
 ```
-
-The shebang allows executing the CLI directly.  
-All logic resides in `src/index.js`.
 
 ## Data Storage
 
-- Root config directory:  
-  `~/.sem/`
+- Root config directory: `~/.sem/`
+- Registered projects: `~/.sem/projects.json`
+- Environment files: `~/.sem/<project_name>/`
 
-- Registered projects file:  
-  `~/.sem/projects.json`
-
-- Environment file storage:  
-  `~/.sem/<project_name>/`
-
-Example:
-
+Example structure:
 ```
 ~/.sem/
 ├── projects.json
 └── my-app/
-    ├── dev.env
-    ├── staging.env
-    └── prod.env
+    ├── prod
+    ├── staging
+    ├── dev
+    └── prod.bak.1638360000000
 ```
 
-## Commands Overview
+## Commands Reference
 
-### **Project Commands**
-Manage linked projects.
+### Quick Commands (Recommended)
 
-#### Add a project
+These commands automatically infer your project from the current directory:
+
+#### `sem init [name]`
+Initialize current directory as a sem project.
+
 ```bash
-sem project add <name> <path>
+cd ~/projects/my-app
+sem init              # uses directory name
+sem init myapp        # custom name
 ```
-Links a project name to a local filesystem path and stores it in `~/.sem/projects.json`.
 
-#### List all projects
-```bash
-sem project list
-```
-Displays all linked projects and their paths.
+#### `sem add <file> [name]`
+Add an environment file to the current project.
 
-#### Remove a project
 ```bash
-sem project remove <name>
+sem add .env.production prod
+sem add .env.staging           # uses filename as name
 ```
-Unlinks and deletes the project record from `projects.json`.
+
+#### `sem pull <env> [target]`
+Pull a stored environment file to local (storage → local).
+
+```bash
+sem pull prod              # pulls to .env (default)
+sem pull staging .env.local
+```
+
+#### `sem push [target] [name]`
+Push local changes to storage (local → storage).
+
+```bash
+sem push              # pushes .env and saves with same name
+sem push .env prod    # pushes .env and saves as "prod"
+```
+
+#### `sem ls [project]`
+List environment files.
+
+```bash
+sem ls                # lists all projects and their envs
+sem ls myapp          # lists envs for specific project
+```
+
+#### `sem diff <env> [target]`
+Show differences between stored and local files.
+
+```bash
+sem diff prod              # compares stored "prod" with local .env
+sem diff staging .env.local
+```
+
+#### `sem sync <env> [target]`
+Sync between stored and local (uses newer file).
+
+```bash
+sem sync prod              # syncs based on modification time
+sem sync staging .env.local
+```
 
 ---
 
-### **Environment Commands**
-Manage stored environment files for a linked project.
+### Full Commands (Explicit Project Names)
 
-#### Add a new environment file
-```bash
-sem env add <project> <sourceFile> [envName]
-```
-Copies a source file (e.g. `.env`) into `~/.sem/<project>/`  
-Optionally renames it as `[envName]`.
+All commands support explicit project names for advanced usage:
 
-#### List environment files
-```bash
-sem env list <project>
-```
-Displays all environment files stored for a given project.
-
-#### Apply an environment file
-```bash
-sem env use <project> <envFile> <target>
-```
-Copies `<envFile>` from the sem store to the project’s `<target>` file (e.g., `.env`).  
-If the target exists, a `.bak` backup is created first.
-
-#### Remove an environment file
-```bash
-sem env remove <project> <envFile>
-```
-Deletes a stored environment file from `~/.sem/<project>/`.
-
-## Example Workflow
+#### Project Management
 
 ```bash
-# 1. Link a local project
+# Add a project
+sem project add <name> <path>
 sem project add my-app ~/projects/my-app
 
-# 2. Store a .env file for it
-sem env add my-app ./envs/dev.env dev.env
-
-# 3. Apply it to the project
-sem env use my-app dev.env .env
-
-# 4. List available projects and envs
+# List all projects
 sem project list
-sem env list my-app
 
-# 5. Remove env or project if needed
-sem env remove my-app dev.env
-sem project remove my-app
+# Remove a project
+sem project remove <name>
 ```
 
-## Local Development
-
-Run directly with Node:
+#### Environment Management
 
 ```bash
-npm run start -- <command>
+# Add environment file
+sem env add <project> <file> [name]
+sem env add my-app .env.production prod
+
+# List environment files
+sem env list [project]
+sem env list              # all projects
+sem env list my-app       # specific project
+
+# Pull environment file (storage → local)
+sem env pull <env> [target] [project]
+sem env pull prod .env my-app
+
+# Push local changes (local → storage)
+sem env push [target] [name] [project]
+sem env push .env prod my-app
+
+# Remove environment file
+sem env remove <project> <env>
+sem env remove my-app old-env
+
+# Diff files
+sem env diff <env> [target] [project]
+sem env diff prod .env my-app
+
+# Sync files
+sem env sync <env> [target] [project]
+sem env sync prod .env my-app
 ```
 
-Example:
+---
+
+## Workflow Examples
+
+### Example 1: New Project Setup
 
 ```bash
-npm run start -- project list
+# Navigate to your project
+cd ~/projects/my-api
+
+# Initialize
+sem init my-api
+
+# Add your environment files
+sem add .env.development dev
+sem add .env.staging staging
+sem add .env.production prod
+
+# Start using them
+sem pull dev
 ```
 
-Or use the globally linked binary:
+### Example 2: Switching Environments
 
 ```bash
-sem project list
+cd ~/projects/my-api
+
+# Pull staging environment
+sem pull staging
+# Pulled staging → /home/user/projects/my-api/.env
+
+# Check what's different from prod
+sem diff prod
+
+# Pull prod environment
+sem pull prod
 ```
 
-## Design Notes
+### Example 3: Updating Stored Configs
 
-- Modular command structure under `src/commands/`.
-- JSON-based configuration for persistence.
-- Extensible: easy to add new commands or features.
-- Future additions planned:
-  - Colorized output with Chalk.
-  - Better error and log handling.
+```bash
+cd ~/projects/my-api
 
-## Next Steps
+# Pull production env
+sem pull prod
 
--  Implement configuration path override (`SEM_HOME` env var).
-- Add export/import of project sets.
-- Improve output formatting (colors, tables).  
-- Improve backup for env override process (store backup on sem folder)
+# Make some local changes to .env
+nvim .env
+
+# Push changes back to storage
+sem push .env prod
+# Pushed .env → my-api/prod
+# Backup created: prod.bak.1638360000000
+```
+
+### Example 4: Multi-Project Management
+
+```bash
+# Setup multiple projects
+cd ~/projects/frontend
+sem init frontend
+sem add .env.prod prod
+
+cd ~/projects/backend
+sem init backend
+sem add .env.prod prod
+
+# List all
+sem ls
+# 🌱 Env files:
+#
+# 📦 frontend:
+#   - prod
+#
+# 📦 backend:
+#   - prod
+
+# Work from anywhere
+cd ~/projects/frontend
+sem pull prod             # pulls frontend's prod
+
+cd ~/projects/backend
+sem pull prod             # pulls backend's prod
+```
+
+## Technologies
+
+- **Node.js**: Runtime environment
+- **Commander.js**: CLI framework
+- **fs-extra**: Enhanced file operations
+
+---
+
+## Troubleshooting
+
+### "Could not infer project"
+
+This means `sem` couldn't automatically detect your project. Either:
+- Run `sem init` in your project directory first
+- Use the explicit form: `sem env pull <env> [target] <project>`
+
+### Files not syncing
+
+Make sure you're in the correct project directory or specify the project explicitly:
+
+```bash
+# From project directory
+sem pull prod
+
+# Or explicitly
+sem env pull prod .env my-project
+```
+
+---
+
+## Roadmap
+SOON

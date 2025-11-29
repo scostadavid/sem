@@ -4,7 +4,15 @@ const program = new Command();
 program
   .name('sem')
   .description('SEM (Some Env Manager) CLI :: manage and apply environment configs across projects')
-  .version('1.0.1');
+  .version('2.0.0');
+
+//
+// INIT COMMAND (top-level)
+//
+program
+  .command('init [name]')
+  .description('Initialize current directory as a sem project')
+  .action(require('./commands/init'));
 
 //
 // PROJECT COMMANDS
@@ -42,13 +50,61 @@ env
   .action(require('./commands/env/list'));
 
 env
-  .command('use <project> <envFile> <target>')
-  .description('Apply a stored env file to the target project directory')
-  .action(require('./commands/env/use'));
-
-env
   .command('remove <project> <envFile>')
   .description('Remove a stored env file from a project')
   .action(require('./commands/env/remove'));
+
+env
+  .command('pull <envFile> [target] [project]')
+  .description('Pull stored env file to local (storage → local)')
+  .action(require('./commands/env/pull'));
+
+env
+  .command('push [target] [envName] [project]')
+  .description('Push local changes to stored env file (local → storage)')
+  .action(require('./commands/env/push'));
+
+env
+  .command('diff <envFile> [target] [project]')
+  .description('Show differences between stored and local env files')
+  .action(require('./commands/env/diff'));
+
+env
+  .command('sync <envFile> [target] [project]')
+  .description('Sync stored and local env files (bidirectional)')
+  .action(require('./commands/env/sync'));
+
+//
+// SHORT ALIASES (top-level for better UX)
+//
+program
+  .command('pull <envFile> [target] [project]')
+  .description('Pull stored env to local (storage → local)')
+  .action(require('./commands/env/pull'));
+
+program
+  .command('push [target] [envName] [project]')
+  .description('Push local changes to storage (local → storage)')
+  .action(require('./commands/env/push'));
+
+program
+  .command('add <sourceFile> [envName] [project]')
+  .description('Add an env file (alias for env add, infers project)')
+  .action(require('./commands/env/add'));
+
+program
+  .command('ls [project]')
+  .description('List env files (alias for env list)')
+  .action(require('./commands/env/list'));
+
+program
+  .command('diff <envFile> [target] [project]')
+  .description('Show diff (alias for env diff)')
+  .action(require('./commands/env/diff'));
+
+program
+  .command('sync <envFile> [target] [project]')
+  .description('Sync env files (alias for env sync)')
+  .action(require('./commands/env/sync'));
 
 program.parse(process.argv);
