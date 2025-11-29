@@ -37,8 +37,8 @@ env
   .action(require('./commands/env/add'));
 
 env
-  .command('list <project>')
-  .description('List stored environment files for a project')
+  .command('list [project]')
+  .description('List stored environment files for a project (or all projects if omitted)')
   .action(require('./commands/env/list'));
 
 env
